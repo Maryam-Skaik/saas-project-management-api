@@ -1,305 +1,309 @@
-# 📌 SaaS Project Management API
+# 🧠 SaaS Project Management API
 
-![Node.js](https://img.shields.io/badge/Node.js-18.x-green?logo=node.js)
-![Express](https://img.shields.io/badge/Express.js-Framework-black?logo=express)
-![MongoDB](https://img.shields.io/badge/MongoDB-Database-green?logo=mongodb)
-![JWT](https://img.shields.io/badge/Auth-JWT-orange?logo=jsonwebtokens)
-![License](https://img.shields.io/badge/License-MIT-blue)
-![Status](https://img.shields.io/badge/Status-In%20Development-yellow)
+![Node.js](https://img.shields.io/badge/Node.js-18.x-green)
+![Express](https://img.shields.io/badge/Express.js-FastAPI-black)
+![MongoDB](https://img.shields.io/badge/MongoDB-Database-brightgreen)
+![JWT](https://img.shields.io/badge/Auth-JWT-orange)
+![Architecture](https://img.shields.io/badge/Focus-Middleware%20%26%20Routing-blue)
+![Status](https://img.shields.io/badge/Status-Learning%20Project-purple)
 
-A production-style backend API for a **multi-tenant SaaS Project Management system**, built with **Node.js, Express, and MongoDB**.
-The system simulates real-world SaaS architecture including authentication, organization-based isolation, role-based access control, and modular service design.
+A backend project built with **Node.js + Express.js + MongoDB**, designed primarily to deeply understand:
 
----
-
-## 🚀 Tech Stack
-
-* Node.js
-* Express.js
-* MongoDB + Mongoose
-* JWT Authentication
-* bcryptjs
-* Joi Validation
-* Express Rate Limit
-* Helmet (Security)
-* Morgan (Logging)
-* CORS
+- Express middleware architecture
+- Request lifecycle execution model
+- Modular routing system
+- Multi-tenant organization structure
+- Authentication & authorization flow
 
 ---
 
-## 🧠 Architecture Overview
+# 🎯 Project Focus
 
-This project is designed using **layered backend architecture**:
+This project is not just a CRUD API.
+
+It is a **learning implementation of how Express.js actually executes requests internally**, including:
+
+- Middleware stack execution order
+- Router mounting and delegation
+- Request propagation across nested routers
+- Error handling pipeline
+- Logging and rate-limiting middleware
+- JWT authentication flow
+- Multi-tenant (organization-based) access control
+
+---
+
+# ⚙️ Tech Stack
+
+- Node.js
+- Express.js
+- MongoDB + Mongoose
+- JWT Authentication
+- Middleware-based architecture
+
+---
+
+# 🧩 Core Concept: Express.js Execution Model
+
+Express.js is built on top of Node.js HTTP module and introduces a **middleware stack execution system**.
+
+When a request enters the system:
+
+1. Node receives the HTTP request
+2. Express wraps it into `req` and `res` objects
+3. The request enters a **linear middleware stack**
+4. Each middleware decides:
+   - handle request
+   - or pass control using `next()`
+
+👉 Execution is **sequential, controlled, and interruptible**
+
+---
+
+# 🔁 Middleware Architecture
+
+Middleware is the core execution unit in this project.
+
+Each middleware is a function with access to:
+
+```js
+(req, res, next)
+````
+
+It can:
+
+* Modify request/response
+* Stop execution
+* Forward control using `next()`
+* Forward errors using `next(err)`
+
+---
+
+## 🧠 Middleware Execution Flow
 
 ```
-Client → Routes → Middleware → Controllers → Services → Database
+Request → Middleware 1 → Middleware 2 → Middleware 3 → Route Handler → Response
 ```
 
-### Key Design Principles:
-
-* Multi-tenant SaaS architecture (organization isolation)
-* Modular feature-based structure
-* Middleware-driven request lifecycle
-* Separation of concerns (Controller / Service / Data layer)
-* Centralized error handling
+If any middleware does NOT call `next()`, execution stops.
 
 ---
 
-## 📁 Project Structure
+## 🔥 Types of Middleware in This Project
 
-```
-saas-project-management-api/
-│
-├── server.js
-├── package.json
-├── .env.example
-│
-└── src/
-    ├── app.js
-    │
-    ├── config/
-    │   ├── db.js
-    │   └── env.js
-    │
-    ├── database/
-    │   └── seed.js
-    │
-    ├── middleware/
-    │   ├── auth.middleware.js
-    │   ├── error.middleware.js
-    │   ├── organization.middleware.js
-    │   ├── rateLimit.middleware.js
-    │   ├── rbac.middleware.js
-    │   ├── validate.middleware.js
-    │   └── logger.middleware.js
-    │
-    ├── modules/
-    │   ├── auth/
-    │   ├── organizations/
-    │   ├── projects/
-    │   ├── tasks/
-    │   ├── comments/
-    │   └── activityLogs/
-    │
-    ├── models/
-    │   ├── User.js
-    │   ├── Organization.js
-    │   ├── Project.js
-    │   ├── Task.js
-    │   ├── Comment.js
-    │   └── ActivityLog.js
-    │
-    ├── routes/
-    │   └── index.js
-    │
-    ├── utils/
-    │   ├── ApiError.js
-    │   ├── asyncHandler.js
-    │   ├── jwt.js
-    │   └── constants.js
-    │
-    ├── services/
-    │   └── activity.service.js
-    │
-    └── repositories/
-        └── base.repository.js
+### 1. Application Middleware
 
-```
+Applied globally:
+
+* Logger middleware
+* Rate limiter
+* JSON parser
 
 ---
 
-## 🔐 Features
+### 2. Authentication Middleware
 
-### 🔑 Authentication
+Validates JWT token:
 
-* User registration & login
-* JWT-based authentication
-* Password hashing (bcrypt)
-
-### 🏢 Multi-Tenant Organizations
-
-* Create / join organizations
-* Organization-based data isolation
-* Request scoped by `x-organization-id`
-
-### 📊 Project Management
-
-* Create and manage projects
-* Organization-level project isolation
-
-### ✅ Task Management
-
-* Task creation and assignment
-* Status tracking (TODO / IN_PROGRESS / DONE)
-* Task filtering per project
-
-### 💬 Comments System
-
-* Task-based discussions
-* User comment tracking
-
-### 📜 Activity Logging
-
-* Tracks all important system actions
-* Organization-level audit trail
+* Extracts user from token
+* Attaches user to request
+* Blocks unauthorized access
 
 ---
 
-## 🧱 Middleware System
+### 3. Organization Middleware (Multi-Tenant Layer)
 
-The request lifecycle is controlled by layered middleware:
+Ensures every request belongs to a valid organization:
 
-* Authentication Middleware (JWT validation)
-* Organization Middleware (tenant resolution)
-* RBAC Middleware (role-based access)
-* Rate Limiting Middleware
-* Validation Middleware (Joi)
-* Central Error Handler
+* Reads `x-organization-id`
+* Validates membership
+* Enforces data isolation between organizations
 
 ---
 
-## 🔁 Request Flow
+### 4. Error Middleware
+
+Special middleware with 4 parameters:
+
+```js
+(err, req, res, next)
+```
+
+Used for centralized error handling.
+
+---
+
+# 🧭 Routing Architecture
+
+Routes are organized using **Express Routers**, not flat endpoints.
+
+---
+
+## 📦 Route Structure
 
 ```
-Request
- → Logger Middleware
- → Rate Limiter
- → Auth Middleware
- → Organization Middleware
- → RBAC Middleware
- → Route Handler
- → Service Layer
- → Database
- → Response
+/api
+ ├── /auth
+ ├── /organizations
+ ├── /projects
+ ├── /tasks
+ ├── /comments
+ └── /activity-logs
 ```
 
 ---
 
-## ⚙️ Installation
+## 🧠 Router Internals
 
-### 1. Clone Repository
+Each router is a **mini middleware stack**.
 
-```bash
-git clone https://github.com/Marym-Skaik/saas-project-management-api.git
-cd saas-project-management-api
+When mounted:
+
+```js
+app.use("/api", apiRouter);
 ```
+
+Express:
+
+* Matches `/api`
+* Strips prefix
+* Forwards request into nested router stack
 
 ---
 
-### 2. Install Dependencies
+## 🔄 Nested Routing Flow
 
-```bash
-npm install
+Example:
+
 ```
+/api/projects/:id
+```
+
+Execution:
+
+1. Root app receives request
+2. Matches `/api` → enters API router
+3. Matches `/projects` → enters project router
+4. Matches `/:id` → route handler executes
 
 ---
 
-### 3. Configure Environment
+# 🏢 Multi-Tenant Architecture
 
-Create `.env` file:
+This system supports organization-based isolation.
 
-```env
-PORT=5000
-MONGO_URI=mongodb://127.0.0.1:27017/saas_pm
-JWT_SECRET=your_secret_key
-```
+Every request must include:
 
----
-
-### 4. Run Server
-
-```bash
-npm run dev
-```
-
----
-
-### 5. Seed Database (optional)
-
-```bash
-npm run seed
-```
-
----
-
-## 🧪 API Testing (Postman)
-
-### Base URL:
-
-```
-http://localhost:5000/api
-```
-
----
-
-### 🔑 Auth
-
-* POST `/auth/register`
-* POST `/auth/login`
-
----
-
-### 🏢 Organizations
-
-* POST `/orgs`
-* POST `/orgs/:id/join`
-
----
-
-### 📁 Projects
-
-* POST `/projects`
-* GET `/projects`
-
-Headers:
-
-```
-Authorization: Bearer <token>
+```http
 x-organization-id: <org_id>
 ```
 
----
+Middleware ensures:
 
-### ✅ Tasks
-
-* POST `/tasks`
-* GET `/tasks/project/:projectId`
-* PATCH `/tasks/:id/status`
+* User belongs to organization
+* Data is scoped per organization
 
 ---
 
-### 💬 Comments
+# 🔐 Authentication Flow
 
-* POST `/comments`
-* GET `/comments/task/:taskId`
+1. User logs in
+2. JWT token generated
+3. Token sent in:
 
----
+```http
+Authorization: Bearer <token>
+```
 
-### 📜 Activity Logs
+4. Middleware validates token
+5. User injected into request:
 
-* GET `/activity-logs`
-
----
-
-## 📌 Example Workflow
-
-1. Register user
-2. Login → get JWT
-3. Create organization
-4. Create project
-5. Create task
-6. Add comments
-7. Track activity logs
+```js
+req.user
+```
 
 ---
 
-## 🧠 Learning Outcomes
+# 📊 Activity Logging System
 
-This project demonstrates:
+Every important action triggers an activity log:
 
-* Real-world Express architecture design
-* Middleware pipeline engineering
-* SaaS multi-tenant systems
-* Backend modularization
-* Clean separation of concerns
-* Production-level API structure thinking
+* Task creation
+* Project updates
+* Organization actions
+
+Stored via:
+
+```js
+logActivity({
+  organization,
+  user,
+  action,
+  entityType,
+  entityId
+});
+```
+
+---
+
+# ⚠️ Error Handling Model
+
+Express uses **error propagation mode**:
+
+* Normal flow: `next()`
+* Error flow: `next(err)`
+
+When error occurs:
+
+1. Skip normal middleware
+2. Jump to error handlers
+3. Return structured response
+
+---
+
+# 🚦 Rate Limiting Middleware
+
+Implements request throttling to protect API:
+
+Common strategies:
+
+* Token bucket
+* Fixed window counter
+* Leaky bucket
+
+---
+
+# 📌 Request Lifecycle (Full View)
+
+```
+1. Node receives HTTP request
+2. Express wraps req/res
+3. Global middleware executes
+4. Auth middleware validates JWT
+5. Organization middleware checks tenant
+6. Router resolves endpoint
+7. Controller executes business logic
+8. Activity log middleware records event
+9. Response returned
+10. Error middleware handles failures (if any)
+```
+
+---
+
+# 🧪 Purpose of This Project
+
+This project was built to deeply understand:
+
+* How Express executes middleware internally
+* How routing delegation works under the hood
+* How large-scale backend systems structure requests
+* How multi-tenant APIs are designed
+* How middleware pipelines control execution flow
+
+---
+
+# 🚀 Key Learning Outcome
+
+Instead of treating Express as a simple framework, this project treats it as:
+
+> A controlled execution engine built on a middleware stack abstraction
